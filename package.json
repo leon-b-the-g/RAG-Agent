@@ -1,0 +1,51 @@
+{
+  "name": "rags2riches",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Permission-aware hybrid RAG over messy German documents, with a CI eval gate",
+  "packageManager": "pnpm@11.8.0",
+  "engines": {
+    "node": ">=22.9"
+  },
+  "scripts": {
+    "db:up": "docker compose up -d",
+    "db:migrate": "node --env-file-if-exists=.env --import tsx src/migrate.ts",
+    "fetch-corpus": "node --env-file-if-exists=.env --import tsx scripts/fetch-corpus.ts",
+    "ingest": "node --env-file-if-exists=.env --import tsx src/ingest/index.ts",
+    "ask": "node --env-file-if-exists=.env --import tsx src/ask.ts",
+    "eval": "node --env-file-if-exists=.env --import tsx src/eval/run.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "golden:check": "node --env-file-if-exists=.env --import tsx scripts/check-golden.ts",
+    "where": "node --env-file-if-exists=.env --import tsx scripts/where.ts",
+    "experiment": "node --env-file-if-exists=.env --import tsx scripts/experiment.ts",
+    "answers": "node --env-file-if-exists=.env --import tsx src/eval/answers.ts",
+    "judge": "node --env-file-if-exists=.env --import tsx src/eval/judge.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.82",
+    "@ai-sdk/cohere": "^4.0.63",
+    "@ai-sdk/openai": "^4.0.96",
+    "@ai-sdk/otel": "^1.0.143",
+    "@huggingface/transformers": "^4.3.1",
+    "@langfuse/otel": "^6.0.0",
+    "@opentelemetry/api": "^1.9.1",
+    "@opentelemetry/sdk-trace-node": "^2.12.0",
+    "ai": "^7.0.143",
+    "mammoth": "^1.13.0",
+    "pg": "^8.23.1",
+    "unpdf": "^1.9.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/pg": "^8",
+    "prettier": "^3.9.6",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.5"
+  }
+}

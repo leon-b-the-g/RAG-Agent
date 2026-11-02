@@ -1,0 +1,66 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: rags
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d rags"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/rags
+      APP_DATABASE_URL: postgres://rag_app:rag_app@localhost:5432/rags
+      EMBED_PROVIDER: fake
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm typecheck
+      - run: pnpm test
+
+  # Retrieval regression gate: runs only when the OpenAI key is available (main branch / trusted PRs).
+  eval-gate:
+    needs: test
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: pgvector/pgvector:pg17
+        env: { POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres, POSTGRES_DB: rags }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d rags"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/rags
+      APP_DATABASE_URL: postgres://rag_app:rag_app@localhost:5432/rags
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: test -n "$OPENAI_API_KEY" || { echo "no OPENAI_API_KEY secret, skipping gate"; exit 0; }
+      - run: pnpm db:migrate
+      - run: pnpm fetch-corpus
+      - run: pnpm ingest
+      - run: pnpm eval --gate
+      # Answer-quality gate: only when the Anthropic secret exists (30 answers + 30 judge calls per push)
+      - run: test -n "$ANTHROPIC_API_KEY" || { echo "no ANTHROPIC_API_KEY secret, skipping judge"; exit 0; }
+      - run: test -z "$ANTHROPIC_API_KEY" || { pnpm answers --limit=30 && pnpm judge --gate; }

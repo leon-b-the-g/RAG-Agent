@@ -1,0 +1,10 @@
+{
+  "hybrid": {
+    "recall": 0.0,
+    "mrr": 0.0
+  },
+  "judge": {
+    "faithfulness": 0.0,
+    "kappa": 0.0
+  }
+}

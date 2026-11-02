@@ -1,0 +1,73 @@
+# One JSON object per line. `relevant.source` is matched as a suffix of the document source (e.g. "gesetze/UStG.pdf" or "UStG.pdf").
+# `contains` is a case-insensitive substring the retrieved chunk must include; `page` pins a page instead.
+# `kind`: direct (fact lookup) · paraphrase (everyday wording, no statute vocabulary) · hard (same words appear in another law) · refusal (corpus cannot answer; relevant is empty).
+# Provenance: drafted by Claude from knowledge of the statutes WITHOUT reading the corpus (2026-10-19), then verified by Leon with `pnpm golden:check` and `pnpm where`. Phrases that failed the check were corrected by hand; questions that did not sound like something a real small-business user would ask were deleted. All data in this repo is public law or synthetic; no company data.
+#
+# --- Umsatzsteuergesetz ---
+{"id":"ustg-001","kind":"direct","question":"Wie hoch ist der ermäßigte Umsatzsteuersatz?","answer":"7 Prozent","relevant":[{"source":"UStG.pdf","contains":"ermäßigt sich die Steuer auf sieben Prozent"}]}
+{"id":"ustg-002","kind":"direct","question":"Welche Umsätze sind nach § 4 UStG von der Umsatzsteuer befreit, wenn es um Heilbehandlungen geht?","relevant":[{"source":"UStG.pdf","contains":"Heilbehandlungen im Bereich der Humanmedizin"}]}
+{"id":"ustg-003","kind":"direct","question":"Wie hoch ist der allgemeine Umsatzsteuersatz?","answer":"19 Prozent","relevant":[{"source":"UStG.pdf","contains":"19 Prozent der Bemessungsgrundlage"}]}
+{"id":"ustg-004","kind":"paraphrase","question":"Ab welchem Jahresumsatz muss ein kleiner Betrieb Umsatzsteuer ausweisen?","answer":"Kleinunternehmerregelung: Vorjahresumsatz bis 25.000 Euro (§ 19 UStG)","relevant":[{"source":"UStG.pdf","contains":"Kleinunternehmer"}]}
+{"id":"ustg-005","kind":"paraphrase","question":"Bis wann muss ich jeden Monat die Umsatzsteuer ans Finanzamt melden?","answer":"bis zum 10. Tag nach Ablauf des Voranmeldungszeitraums","relevant":[{"source":"UStG.pdf","contains":"zehnten Tag nach Ablauf"}]}
+# --- Abgabenordnung ---
+{"id":"ao-001","kind":"direct","question":"Wie lange müssen Bücher und Aufzeichnungen aufbewahrt werden?","answer":"zehn Jahre (Buchungsbelege acht Jahre)","relevant":[{"source":"AO.pdf","contains":"zehn Jahre"}]}
+{"id":"ao-002","kind":"paraphrase","question":"Ich habe die Steuererklärung zu spät abgegeben – was kostet mich das?","answer":"Verspätungszuschlag, 0,25 % der festgesetzten Steuer je Monat, mindestens 25 Euro","relevant":[{"source":"AO.pdf","contains":"0,25 Prozent"}]}
+{"id":"ao-003","kind":"hard","question":"Wie lange kann das Finanzamt eine Steuer noch festsetzen?","answer":"Festsetzungsfrist vier Jahre, bei Hinterziehung zehn","relevant":[{"source":"AO.pdf","contains":"Die Festsetzungsfrist beträgt"}]}
+# --- Gewerbeordnung ---
+{"id":"gewo-001","kind":"paraphrase","question":"Muss ich dem Amt Bescheid sagen, wenn ich einen neuen Betrieb aufmache?","answer":"ja, Gewerbeanzeige nach § 14 GewO, gleichzeitig mit Beginn","relevant":[{"source":"GewO.pdf","contains":"gleichzeitig anzeigen"}]}
+{"id":"gewo-002","kind":"paraphrase","question":"Kann mir das Gewerbe verboten werden, wenn ich Steuern schuldig bleibe?","answer":"Gewerbeuntersagung wegen Unzuverlässigkeit (§ 35 GewO)","relevant":[{"source":"GewO.pdf","contains":"Unzuverlässigkeit des Gewerbetreibenden"}]}
+{"id":"gewo-003","kind":"hard","question":"Brauche ich für einen Imbisswagen eine Reisegewerbekarte?","relevant":[{"source":"GewO.pdf","contains":"Reisegewerbekarte"}]}
+# --- Arbeitszeitgesetz ---
+{"id":"arbzg-001","kind":"direct","question":"Wie lang darf die werktägliche Arbeitszeit höchstens sein?","answer":"acht Stunden, bis zu zehn bei Ausgleich","relevant":[{"source":"ArbZG.pdf","contains":"acht Stunden nicht überschreiten"}]}
+{"id":"arbzg-002","kind":"direct","question":"Welche Ruhepausen stehen Arbeitnehmern bei mehr als sechs Stunden Arbeit zu?","answer":"mindestens 30 Minuten, bei mehr als neun Stunden 45 Minuten","relevant":[{"source":"ArbZG.pdf","contains":"30 Minuten"}]}
+{"id":"arbzg-003","kind":"paraphrase","question":"Darf mein Koch an einem Tag 11 Stunden am Stück arbeiten?","answer":"nein, höchstens zehn Stunden, und nur mit Ausgleich auf acht im Schnitt","relevant":[{"source":"ArbZG.pdf","contains":"zehn Stunden nur verlängert werden"}]}
+{"id":"arbzg-004","kind":"paraphrase","question":"Wie viel Zeit muss zwischen Feierabend und der nächsten Schicht liegen?","answer":"mindestens elf Stunden Ruhezeit","relevant":[{"source":"ArbZG.pdf","contains":"mindestens elf Stunden"}]}
+{"id":"arbzg-005","kind":"paraphrase","question":"Wir sind ein Gastronomiebetrieb – dürfen unsere Leute sonntags arbeiten?","answer":"ja, Ausnahme für Gaststätten und Einrichtungen zur Bewirtung (§ 10 ArbZG)","relevant":[{"source":"ArbZG.pdf","contains":"Bewirtung und Beherbergung"}]}
+# --- Kündigungsschutzgesetz ---
+{"id":"kschg-001","kind":"direct","question":"Ab wie vielen Arbeitnehmern gilt der Kündigungsschutz nach dem KSchG?","answer":"mehr als zehn Arbeitnehmer","relevant":[{"source":"KSchG.pdf","contains":"zehn oder weniger Arbeitnehmer"}]}
+{"id":"kschg-002","kind":"paraphrase","question":"Wie lange muss jemand bei uns sein, bevor er Kündigungsschutz hat?","answer":"länger als sechs Monate","relevant":[{"source":"KSchG.pdf","contains":"länger als sechs Monate"}]}
+{"id":"kschg-003","kind":"direct","question":"Innerhalb welcher Frist muss ein Arbeitnehmer gegen eine Kündigung klagen?","answer":"drei Wochen nach Zugang der schriftlichen Kündigung","relevant":[{"source":"KSchG.pdf","contains":"drei Wochen nach Zugang"}]}
+{"id":"kschg-004","kind":"hard","question":"Dürfen wir kündigen, weil wir einen Standort schließen?","answer":"ja, als betriebsbedingte Kündigung bei dringenden betrieblichen Erfordernissen","relevant":[{"source":"KSchG.pdf","contains":"dringende betriebliche Erfordernisse"}]}
+# --- Mindestlohngesetz ---
+{"id":"milog-001","kind":"direct","question":"Wer legt die Höhe des gesetzlichen Mindestlohns fest?","answer":"die Mindestlohnkommission","relevant":[{"source":"MiLoG.pdf","contains":"Mindestlohnkommission"}]}
+{"id":"milog-002","kind":"direct","question":"Worauf bezieht sich der Mindestlohn – pro Stunde oder pro Monat?","answer":"brutto je Zeitstunde","relevant":[{"source":"MiLoG.pdf","contains":"je Zeitstunde"}]}
+{"id":"milog-003","kind":"paraphrase","question":"Wie lange müssen wir die Stundenzettel unserer Minijobber aufheben?","answer":"mindestens zwei Jahre","relevant":[{"source":"MiLoG.pdf","contains":"mindestens zwei Jahre"}]}
+{"id":"milog-004","kind":"hard","question":"Sind wir verpflichtet, die Arbeitszeiten unserer Mitarbeiter aufzuschreiben?","answer":"ja: Mehrarbeit über acht Stunden (ArbZG § 16) und für Minijobber Beginn, Ende, Dauer (MiLoG § 17)","relevant":[{"source":"ArbZG.pdf","contains":"hinausgehende Arbeitszeit"},{"source":"MiLoG.pdf","contains":"Dauer der täglichen Arbeitszeit"}]}
+# --- Gaststättengesetz ---
+{"id":"gastg-001","kind":"direct","question":"Wann braucht man eine Gaststättenerlaubnis?","relevant":[{"source":"GastG.pdf","contains":"Erlaubnis"}]}
+{"id":"gastg-002","kind":"paraphrase","question":"Wir schenken nur Kaffee und Limo aus – brauchen wir trotzdem eine Konzession?","answer":"nein, erlaubnisfrei bei alkoholfreien Getränken (§ 2 Abs. 2 GastG)","relevant":[{"source":"GastG.pdf","contains":"alkoholfreie Getränke"}]}
+{"id":"gastg-003","kind":"paraphrase","question":"Darf ich einem Gast, der schon ziemlich betrunken ist, noch Bier geben?","answer":"nein, Verbot der Abgabe an erkennbar Betrunkene (§ 20 GastG)","relevant":[{"source":"GastG.pdf","contains":"erkennbar Betrunkene"}]}
+# --- Lebensmittel- und Futtermittelgesetzbuch / Infektionsschutzgesetz ---
+{"id":"lfgb-001","kind":"direct","question":"Ist es verboten, Lebensmittel so herzustellen, dass ihr Verzehr gesundheitsschädlich ist?","answer":"ja (§ 5 LFGB)","relevant":[{"source":"LFGB.pdf","contains":"Verzehr gesundheitsschädlich"}]}
+{"id":"ifsg-001","kind":"paraphrase","question":"Welchen Nachweis brauchen neue Küchenkräfte vom Gesundheitsamt, bevor sie anfangen?","answer":"Bescheinigung des Gesundheitsamtes über die Belehrung nach § 43 IfSG","relevant":[{"source":"IfSG.pdf","contains":"Bescheinigung des Gesundheitsamtes"}]}
+{"id":"ifsg-002","kind":"paraphrase","question":"Mein Koch hat Durchfall – darf er heute in der Küche arbeiten?","answer":"nein, Tätigkeitsverbot bei infektiöser Gastroenteritis (§ 42 IfSG)","relevant":[{"source":"IfSG.pdf","contains":"infektiöser Gastroenteritis"}]}
+{"id":"ifsg-003","kind":"direct","question":"Wie oft muss der Arbeitgeber seine Mitarbeiter über die Tätigkeitsverbote nach dem Infektionsschutzgesetz belehren?","answer":"nach Aufnahme der Tätigkeit und danach jährlich","relevant":[{"source":"IfSG.pdf","contains":"im Weiteren jährlich"}]}
+# --- Wettbewerb / Telemedien / Datenschutz ---
+{"id":"uwg-001","kind":"paraphrase","question":"Dürfen wir auf der Website mit 'bester Caterer Berlins' werben?","answer":"nur wenn belegbar, sonst irreführende geschäftliche Handlung (§ 5 UWG)","relevant":[{"source":"UWG.pdf","contains":"irreführende geschäftliche Handlung"}]}
+{"id":"uwg-002","kind":"paraphrase","question":"Dürfen wir alten Kunden einfach so Werbe-Mails für das Weihnachtsmenü schicken?","answer":"nur mit vorheriger ausdrücklicher Einwilligung, Ausnahme Bestandskunden (§ 7 UWG)","relevant":[{"source":"UWG.pdf","contains":"vorherige ausdrückliche Einwilligung"}]}
+{"id":"tdddg-001","kind":"hard","question":"Dürfen wir auf unserer Website Cookies ohne Zustimmung setzen?","answer":"nur unbedingt erforderliche (§ 25 TDDDG)","relevant":[{"source":"TDDDG.pdf","contains":"unbedingt erforderlich"}]}
+{"id":"bdsg-001","kind":"direct","question":"Ab wie vielen Personen muss ein Datenschutzbeauftragter benannt werden?","answer":"ab 20 Personen mit automatisierter Verarbeitung","relevant":[{"source":"BDSG.pdf","contains":"20 Personen"}]}
+{"id":"bdsg-002","kind":"paraphrase","question":"Welche Daten dürfen wir über Bewerber und Mitarbeiter speichern?","answer":"was für Begründung, Durchführung oder Beendigung des Beschäftigungsverhältnisses erforderlich ist (§ 26 BDSG)","relevant":[{"source":"BDSG.pdf","contains":"Begründung eines Beschäftigungsverhältnisses"}]}
+{"id":"bdsg-003","kind":"hard","question":"Kann ein Kunde von uns verlangen zu erfahren, welche Daten wir über ihn haben?","answer":"ja, Auskunftsrecht; Einschränkungen in § 34 BDSG","relevant":[{"source":"BDSG.pdf","contains":"Auskunftsrecht der betroffenen Person"}]}
+# --- Produkthaftung / Verwaltungsverfahren ---
+{"id":"prodhaftg-001","kind":"direct","question":"Haftet ein Hersteller auch ohne Verschulden, wenn ein fehlerhaftes Produkt jemanden verletzt?","answer":"ja, Gefährdungshaftung nach § 1 ProdHaftG","relevant":[{"source":"ProdHaftG.pdf","contains":"Fehler eines Produkts"}]}
+{"id":"prodhaftg-002","kind":"direct","question":"Gibt es bei Sachschäden nach dem Produkthaftungsgesetz eine Selbstbeteiligung?","answer":"ja, 500 Euro","relevant":[{"source":"ProdHaftG.pdf","contains":"500 Euro"}]}
+{"id":"vwvfg-001","kind":"paraphrase","question":"Muss mich die Behörde anhören, bevor sie mir etwas Negatives bescheidet?","answer":"ja, Anhörung nach § 28 VwVfG","relevant":[{"source":"VwVfG.pdf","contains":"erheblichen Tatsachen zu äußern"}]}
+{"id":"vwvfg-002","kind":"paraphrase","question":"In meinem Bescheid steht ein Zahlendreher – kann das Amt das einfach berichtigen?","answer":"ja, offenbare Unrichtigkeiten jederzeit (§ 42 VwVfG)","relevant":[{"source":"VwVfG.pdf","contains":"offenbare Unrichtigkeiten"}]}
+# --- Gesellschaftsrecht / Handelsrecht / BGB ---
+{"id":"gmbhg-001","kind":"direct","question":"Wie hoch ist das Mindeststammkapital einer GmbH?","answer":"25.000 Euro","relevant":[{"source":"GmbHG.pdf","contains":"fünfundzwanzigtausend Euro"}]}
+{"id":"gmbhg-002","kind":"paraphrase","question":"Kann ich eine GmbH auch mit weniger als 25.000 Euro gründen?","answer":"ja, als Unternehmergesellschaft (haftungsbeschränkt), § 5a GmbHG","relevant":[{"source":"GmbHG.pdf","contains":"haftungsbeschränkt"}]}
+{"id":"hgb-001","kind":"direct","question":"Wer ist Kaufmann im Sinne des Handelsgesetzbuchs?","answer":"wer ein Handelsgewerbe betreibt","relevant":[{"source":"HGB.pdf","contains":"wer ein Handelsgewerbe betreibt"}]}
+{"id":"hgb-002","kind":"hard","question":"Wie lange müssen Geschäftsbriefe aufbewahrt werden?","answer":"sechs Jahre (HGB § 257), anders als Bücher mit zehn","relevant":[{"source":"HGB.pdf","contains":"sechs Jahre"}]}
+{"id":"bgb-001","kind":"paraphrase","question":"Mit welcher Frist kann ich einem Mitarbeiter kündigen, der drei Jahre bei uns ist?","answer":"ein Monat zum Monatsende (§ 622 BGB)","relevant":[{"source":"BGB.pdf","contains":"einen Monat zum Ende eines Kalendermonats"}]}
+{"id":"bgb-002","kind":"direct","question":"Wie lang ist die Kündigungsfrist in der Probezeit?","answer":"zwei Wochen","relevant":[{"source":"BGB.pdf","contains":"Frist von zwei Wochen gekündigt werden"}]}
+{"id":"bgb-003","kind":"hard","question":"Wann verjährt eine offene Rechnung an einen Geschäftskunden?","answer":"regelmäßige Verjährungsfrist drei Jahre (§ 195 BGB)","relevant":[{"source":"BGB.pdf","contains":"regelmäßige Verjährungsfrist beträgt drei Jahre"}]}
+{"id":"bgb-004","kind":"direct","question":"Wann ist eine gekaufte Sache frei von Sachmängeln?","answer":"wenn sie den subjektiven und objektiven Anforderungen entspricht (§ 434 BGB)","relevant":[{"source":"BGB.pdf","contains":"subjektiven Anforderungen"}]}
+# --- Einkommensteuer ---
+{"id":"estg-001","kind":"hard","question":"Welchen Anteil der Bewirtungskosten für Geschäftsessen darf ich als Betriebsausgabe abziehen?","answer":"70 Prozent","relevant":[{"source":"EStG.pdf","contains":"70 Prozent der Aufwendungen"}]}
+{"id":"estg-002","kind":"direct","question":"Was ist der Grundfreibetrag bei der Einkommensteuer?","relevant":[{"source":"EStG.pdf","contains":"Grundfreibetrag"}]}
+# --- Refusals: the corpus does not contain the law that answers these; a good system says so ---
+{"id":"ref-001","kind":"refusal","question":"Wie viele Urlaubstage stehen einem Vollzeitmitarbeiter mindestens zu?","answer":"nicht im Korpus (BUrlG fehlt)","relevant":[]}
+{"id":"ref-002","kind":"refusal","question":"Wie hoch ist der aktuelle Beitragssatz zur gesetzlichen Rentenversicherung?","answer":"nicht im Korpus (SGB VI fehlt)","relevant":[]}
+{"id":"ref-003","kind":"refusal","question":"Welche Temperatur muss unser Tiefkühllager mindestens halten?","answer":"nicht im Korpus (TLMV fehlt)","relevant":[]}
+{"id":"ref-004","kind":"refusal","question":"Wie lange kann ein Mitarbeiter Elternzeit nehmen?","answer":"nicht im Korpus (BEEG fehlt)","relevant":[]}

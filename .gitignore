@@ -1,0 +1,12 @@
+node_modules
+dist
+.env
+corpus/*
+!corpus/.gitkeep
+eval/results/*
+!eval/results/.gitkeep
+eval/answers/*
+!eval/answers/.gitkeep
+eval/judgments/*
+!eval/judgments/.gitkeep
+.idea/ 

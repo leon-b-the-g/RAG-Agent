@@ -1,0 +1,18 @@
+# 30 — Decisions
+
+One line per decision, newest first; the reasoning lives in `docs/adr/`.
+
+| Date       | ID       | Decision                                                                                                                                                                    | Status   |
+| ---------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 2026-10-19 | —        | Judge is our own 80-line script (binary verdict via AI SDK structured output + κ) instead of promptfoo: no new dependency, same CI gate, verdicts stay in the repo's format | accepted |
+| 2026-10-19 | ADR-0004 | Permissions: per-document ACL rows + Postgres row-level security on a restricted role, and the same rule in every query's WHERE clause; default deny                        | accepted |
+| 2026-10-18 | —        | Retrieval knobs (`rrfK`, `candidates`, `efSearch`, `stopwords`) are one `tuning` object; defaults change only after `pnpm experiment` shows a gain                          | accepted |
+| 2026-10-18 | —        | Tracing: OTel → Langfuse Cloud EU (free tier) instead of self-hosting the Langfuse stack; self-host stays possible via `LANGFUSE_BASE_URL`                                  | accepted |
+| 2026-10-18 | ADR-0002 | Full-text query is OR-of-terms with `ts_rank_cd`, not `websearch_to_tsquery` AND                                                                                            | accepted |
+| 2026-10-18 | ADR-0001 | Postgres only: pgvector + tsvector + tenant column, no separate vector DB                                                                                                   | accepted |
+| 2026-10-18 | —        | Embeddings: OpenAI `text-embedding-3-small` (1536d), swap measured in week 7                                                                                                | accepted |
+| 2026-10-18 | —        | Generation and judge: Claude via Vercel AI SDK; model id from `ANSWER_MODEL`                                                                                                | accepted |
+| 2026-10-18 | —        | Tests use `EMBED_PROVIDER=fake` (hash bag-of-words) so CI needs no key                                                                                                      | accepted |
+| 2026-10-18 | —        | Chunking: heading-aware paragraphs, ~1200 chars, 150 overlap; tuned in week 3                                                                                               | accepted |
+| proposed   | ADR-0003 | Reranker: none / overlap / local cross-encoder / Cohere — code in place, default stays `none` until `pnpm experiment rerank` is run on real data                            | week 4   |
+| planned    | ADR-0005 | Demo hosting: Cloudflare Worker + Hyperdrive + Neon vs Fly.io Compose                                                                                                       | week 8   |

@@ -1,0 +1,4 @@
+# Human faithfulness labels, one per line, written by Leon after reading eval/answers/latest.jsonl.
+# faithful = every factual claim in the answer is supported by the excerpts it cites (a refusal is faithful).
+# {"id":"ustg-001","faithful":true,"reason":"7 % steht wörtlich in [1]"}
+# {"id":"arbzg-002","faithful":false,"reason":"nennt 45 Minuten, Auszug sagt 30 Minuten bei 6-9 Stunden"}
