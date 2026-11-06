@@ -3,3 +3,6 @@ dist
 corpus
 pnpm-lock.yaml
 docs/experiments
+test/fixtures-formats/
+docs/figures/**/*.html
+docs/figures/**/kit/

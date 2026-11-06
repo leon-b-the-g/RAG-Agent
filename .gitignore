@@ -10,3 +10,4 @@ eval/answers/*
 eval/judgments/*
 !eval/judgments/.gitkeep
 .idea/ 
+.impeccable/

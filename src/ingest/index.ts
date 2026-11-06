@@ -5,9 +5,8 @@ import path from 'node:path';
 import { pool, query, withTx, vec } from '../db.js';
 import { embed } from '../embed.js';
 import { chunkPages, type ChunkOptions } from './chunk.js';
-import { parseFile } from './parse.js';
-
-const EXT = new Set(['.pdf', '.docx', '.txt', '.md']);
+import { contextualize } from './contextualize.js';
+import { endParsers, EXT, parseFile } from './parse.js';
 
 export async function listFiles(dir: string): Promise<string[]> {
   const out: string[] = [];
@@ -37,15 +36,19 @@ export async function ingestFile(
   if (existing[0]?.sha256 === sha256) return 'skipped';
 
   const parsed = await parseFile(file);
+  if (parsed.ocrPages) console.log(`      ocr    ${parsed.ocrPages} page(s) of ${source}`);
   const chunks = chunkPages(parsed.pages, chunkOpts);
-  const embeddings = await embed(chunks.map((c) => c.content));
+  const title = path.basename(file);
+  const contexts = await contextualize(title, parsed.pages, chunks);
+  // context is embedded and indexed with the text, but content stays verbatim for citations
+  const embeddings = await embed(chunks.map((c, i) => `${contexts[i]}\n\n${c.content}`));
 
   await withTx(async (c) => {
     if (existing[0]) await c.query('DELETE FROM documents WHERE id = $1', [existing[0].id]);
     const doc = await c.query<{ id: number }>(
       `INSERT INTO documents (tenant_id, source, title, kind, pages, sha256)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-      [tenant, source, path.basename(file), parsed.kind, parsed.pages.length, sha256],
+      [tenant, source, title, parsed.kind, parsed.pages.length, sha256],
     );
     const docId = doc.rows[0]!.id;
     for (const principal of acl)
@@ -55,9 +58,9 @@ export async function ingestFile(
       ]);
     for (const [i, ch] of chunks.entries()) {
       await c.query(
-        `INSERT INTO chunks (document_id, tenant_id, ord, section, page, content, embedding)
-         VALUES ($1, $2, $3, $4, $5, $6, $7::vector)`,
-        [docId, tenant, ch.ord, ch.section, ch.page, ch.content, vec(embeddings[i]!)],
+        `INSERT INTO chunks (document_id, tenant_id, ord, section, page, content, context, embedding)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8::vector)`,
+        [docId, tenant, ch.ord, ch.section, ch.page, ch.content, contexts[i], vec(embeddings[i]!)],
       );
     }
   });
@@ -84,6 +87,7 @@ export async function ingestDir(
     }
   }
   console.log(`\n${files.length} files, ${total} new chunks`);
+  await endParsers();
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

@@ -32,7 +32,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
 
-  # Retrieval regression gate: runs only when the OpenAI key is available (main branch / trusted PRs).
+  # Retrieval regression gate: runs only when the embedding key is available (main branch / trusted PRs).
   eval-gate:
     needs: test
     if: github.event_name == 'push'
@@ -48,7 +48,7 @@ jobs:
     env:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/rags
       APP_DATABASE_URL: postgres://rag_app:rag_app@localhost:5432/rags
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
       - uses: actions/checkout@v4
@@ -56,7 +56,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      - run: test -n "$OPENAI_API_KEY" || { echo "no OPENAI_API_KEY secret, skipping gate"; exit 0; }
+      - run: test -n "$VOYAGE_API_KEY" || { echo "no VOYAGE_API_KEY secret, skipping gate"; exit 0; }
       - run: pnpm db:migrate
       - run: pnpm fetch-corpus
       - run: pnpm ingest

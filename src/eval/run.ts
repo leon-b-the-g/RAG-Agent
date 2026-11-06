@@ -131,6 +131,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   if (args.includes('--stopwords')) tuning.stopwords = true;
   if (flag('rerank')) tuning.rerank = flag('rerank') as typeof tuning.rerank;
   if (flag('rerank-top')) tuning.rerankTop = Number(flag('rerank-top'));
+  if (flag('multi-query')) tuning.multiQuery = Number(flag('multi-query'));
   const modes: Mode[] = ['dense', 'fts', 'hybrid'];
   (async () => {
     const golden = await loadGolden(flag('golden'));

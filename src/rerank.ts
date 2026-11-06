@@ -1,9 +1,10 @@
 import { rerank as aiRerank } from 'ai';
 import { cohere } from '@ai-sdk/cohere';
+import { voyage } from '@ai-sdk/voyage';
 import type { Hit } from './search.js';
 import { span } from './telemetry.js';
 
-export type RerankProvider = 'none' | 'overlap' | 'local' | 'cohere';
+export type RerankProvider = 'none' | 'overlap' | 'local' | 'cohere' | 'voyage';
 
 const localModelId = process.env.RERANK_MODEL ?? 'Xenova/bge-reranker-base';
 
@@ -16,7 +17,7 @@ export function rerank(q: string, hits: Hit[], provider: RerankProvider): Promis
         ? overlapScores(q, hits)
         : provider === 'local'
           ? await localScores(q, hits)
-          : await cohereScores(q, hits);
+          : await apiScores(q, hits, provider);
     return hits.map((h, i) => ({ ...h, score: scores[i]! })).sort((a, b) => b.score - a.score);
   });
 }
@@ -54,9 +55,12 @@ async function localScores(q: string, hits: Hit[]): Promise<number[]> {
   return (logits.sigmoid().tolist() as number[][]).map((r) => r[0]!);
 }
 
-async function cohereScores(q: string, hits: Hit[]): Promise<number[]> {
+async function apiScores(q: string, hits: Hit[], provider: 'cohere' | 'voyage'): Promise<number[]> {
   const { ranking } = await aiRerank({
-    model: cohere.reranking(process.env.COHERE_RERANK_MODEL ?? 'rerank-v3.5'),
+    model:
+      provider === 'cohere'
+        ? cohere.reranking(process.env.COHERE_RERANK_MODEL ?? 'rerank-v3.5')
+        : voyage.reranking(process.env.VOYAGE_RERANK_MODEL ?? 'rerank-2.5'), // 2.5 is the newest Voyage reranker documented as multilingual
     query: q,
     documents: hits.map((h) => h.content),
   });

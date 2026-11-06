@@ -2,6 +2,7 @@ import { pathToFileURL } from 'node:url';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pool, query } from './db.js';
+import { DIM } from './embed.js';
 
 export async function migrate(dir = path.resolve('sql')) {
   await query(
@@ -18,6 +19,26 @@ export async function migrate(dir = path.resolve('sql')) {
     await query('INSERT INTO schema_migrations (name) VALUES ($1)', [f]);
     console.log(`applied ${f}`);
   }
+  await resizeEmbedding();
+}
+
+/**
+ * chunks.embedding must be exactly as wide as the configured model. A width change on a non-empty
+ * table fails on purpose: the vectors would be garbage, delete the chunks (re-ingest) first.
+ */
+async function resizeEmbedding() {
+  const [col] = await query<{ dim: number }>(
+    `SELECT atttypmod AS dim FROM pg_attribute
+      WHERE attrelid = 'chunks'::regclass AND attname = 'embedding'`,
+  );
+  if (col?.dim === DIM) return;
+  const n = (await query<{ n: string }>('SELECT count(*) AS n FROM chunks'))[0]?.n ?? '0';
+  if (Number(n) > 0)
+    throw new Error(
+      `chunks.embedding is vector(${col?.dim}) but EMBED_DIM=${DIM}; delete the ${n} chunks (DELETE FROM documents) and re-ingest`,
+    );
+  await query(`ALTER TABLE chunks ALTER COLUMN embedding TYPE vector(${DIM})`); // DIM is a number we own
+  console.log(`embedding column resized to vector(${DIM})`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

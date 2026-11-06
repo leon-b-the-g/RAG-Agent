@@ -67,16 +67,25 @@
 - [ ] Leon: `pnpm judge --readme`; if κ < 0.4, tighten the system prompt in `judge.ts` once and re-run; if still < 0.4 report human labels only and say so in the README
 - [ ] Leon: set `PRICE_INPUT_PER_MTOK` / `PRICE_OUTPUT_PER_MTOK` from the current Anthropic price list so the € column is real; raise the `judge` thresholds
 
-## Week 7 — Messy documents
+## Week 7 — Messy documents (code built 2026-11-06, ADR-0006)
 
-- [ ] Rasterise 20 PDF pages to 200 dpi PNG (simulated scans) and OCR with tesseract.js (deu) — acceptance: recall on a 10-question "scan" subset reported before/after
-- [ ] Table-aware extraction for Drucksachen: pdf.js text items with x/y → row reconstruction; report delta on table questions
+- [x] Scanned PDF pages (no text layer) rasterised at 200 dpi and OCR'd with tesseract.js (`deu+eng`); images (`png/jpg/tiff/webp/bmp`) OCR'd directly; `test/parse.test.ts` covers a synthetic scan as PNG and as image-only PDF
+- [x] XLSX (one page per sheet, formula results, ISO dates), CSV (`;`/`,`/tab sniffed, quoted fields), HTML (tags stripped, entities decoded, cells joined) parsers; long tables become 20-row blocks that repeat the header
+- [x] Contextual chunks: `chunks.context` (structural `file › section` default, `CONTEXTUALIZE=llm` for a prompt-cached Haiku sentence) embedded and full-text indexed with the content (`sql/003_context.sql`)
+- [x] Embedding provider swap: Voyage `voyage-4` 1024d default with query/document inputType, OpenAI optional, `EMBED_DIM` enforced by migrate (ADR-0005)
+- [x] Retrieval: pgvector iterative HNSW scan for filtered queries, Voyage reranker, RAG-fusion `--multi-query=n`, `ANSWER_K=10` (ADR-0007)
+- [ ] Leon: `pnpm db:migrate` (adds `context`, resizes the vector column — on an existing DB run `DELETE FROM documents` first), `pnpm ingest`, `pnpm eval --readme`; paste the table into `CONTEXTS/30-decisions.md`
+- [ ] Leon: `pnpm experiment rerank` and `pnpm experiment multiquery` with the Voyage + Anthropic keys; if either wins, set the `tuning` default and raise thresholds
+- [ ] Leon: run `EMBED_PROVIDER=openai EMBED_DIM=1536` once into tenant `exp-openai` and compare with the Voyage row (ADR-0005 decision)
+- [ ] Leon: rasterise 20 real Drucksachen pages (`pdftoppm -r 200`) into `corpus/scans/` and report recall on a 10-question scan subset
+- [ ] Table-aware extraction for PDF Drucksachen (`extractTextItems` x/y → rows) — only if a table question fails the eval
 - [ ] One documented retrieval failure with root cause and fix (`docs/failures/001-….md`)
-- [ ] Embedding-model swap experiment (`text-embedding-3-large` or a multilingual open model) behind the eval
 
-## Week 8 — Ship
+## Week 8 — Ship (API + demo page built 2026-11-06)
 
-- [ ] README numbers final, architecture section matches code, ADR-0005 hosting decision
-- [ ] One-page demo (query box, answer, citations with page numbers) deployed; live URL in README
+- [x] `pnpm serve`: `node:http` API (`/health`, `/search`, `/ask`) and the one-page demo (query box, mode, tenant/principals, answer, citations with page numbers)
+- [x] README architecture section matches the code; ADR-0005/0006/0007 written
+- [ ] Leon: README numbers final (`pnpm eval --readme`, `pnpm judge --readme`)
+- [ ] Leon: ADR-0008 hosting decision; deploy `pnpm serve` behind an auth proxy; live URL in README
 - [ ] 5-minute screen recording; blog post "Measuring retrieval over German law: what moved the numbers"
 - [ ] Post on LinkedIn; add to chordata-systems /projects

@@ -7,12 +7,12 @@ Read `CONTEXTS/00-overview.md` first, then `TASKS.md` for what is next.
 - `pnpm db:up && pnpm db:migrate` — Postgres 17 + pgvector via Docker, apply `sql/*.sql` in order
 - `pnpm test` — vitest; pipeline tests need `DATABASE_URL` and run with `EMBED_PROVIDER=fake`
 - `pnpm typecheck`, `pnpm format` — must be clean before any commit
-- `pnpm ingest [dir] [--tenant=x]`, `pnpm ask "…" [--mode=dense|fts|hybrid]`, `pnpm eval [--gate] [--k=10]`
+- `pnpm ingest [dir] [--tenant=x] [--acl=…]`, `pnpm ask "…" [--mode=dense|fts|hybrid] [--k=10]`, `pnpm eval [--gate] [--k=10] [--rerank=voyage] [--multi-query=2]`, `pnpm serve`
 
 ## Conventions
 
 - TypeScript strict, ESM, Node ≥ 22.9. No ORM: plain SQL through `src/db.ts` `query()`; migrations are numbered files in `sql/`.
-- One module per concern: `ingest/parse.ts` (file → pages), `ingest/chunk.ts` (pages → chunks), `embed.ts`, `search.ts` (dense / fts / hybrid), `ask.ts` (generation), `eval/run.ts` (metrics + gate).
+- One module per concern: `ingest/parse.ts` (file → pages, incl. OCR), `ingest/chunk.ts` (pages → chunks), `ingest/contextualize.ts` (chunk → context prefix), `embed.ts`, `search.ts` (dense / fts / hybrid), `expand.ts` (RAG-fusion paraphrases), `rerank.ts`, `ask.ts` (generation), `server.ts` (HTTP), `eval/run.ts` (metrics + gate).
 - Every retrieval change gets measured: run `pnpm eval` before and after, paste both tables into the PR or commit message, and append a line to `CONTEXTS/30-decisions.md` if a default changes.
 - Fake embeddings (`EMBED_PROVIDER=fake`) are for plumbing tests only; never report numbers from them.
 - Never commit `corpus/`, `.env`, or `eval/results/`.

@@ -1,6 +1,6 @@
 # rags2riches
 
-A retrieval-augmented question answering system for German legal and regulatory documents that can prove its own quality: hybrid search (pgvector + Postgres full-text + optional reranking), per-document permissions enforced by row-level security, a hand-verified golden set, and a CI gate that fails when recall, MRR or answer faithfulness drops.
+A retrieval-augmented question answering system for German legal and regulatory documents that can prove its own quality: hybrid search (pgvector + Postgres full-text + optional reranking) over contextualised chunks, ingestion of messy inputs (scanned PDFs, images, Excel, CSV, HTML, DOCX), per-document permissions enforced by row-level security, a hand-verified golden set, and a CI gate that fails when recall, MRR or answer faithfulness drops.
 
 All data is public law or synthetic; the repo contains no company or personal data.
 
@@ -40,41 +40,47 @@ Reproduce: `pnpm eval` (golden set in `golden/golden.jsonl`, results land in `ev
 ## Run it
 
 ```bash
-cp .env.example .env            # add OPENAI_API_KEY and ANTHROPIC_API_KEY
+cp .env.example .env            # add VOYAGE_API_KEY and ANTHROPIC_API_KEY
 pnpm install
 pnpm db:up                      # Postgres 17 + pgvector in Docker
-pnpm db:migrate
+pnpm db:migrate                 # schema, RLS role, context column; sizes the vector column to EMBED_DIM
 pnpm fetch-corpus               # ~18 German laws + ~40 Bundestag Drucksachen into corpus/
-pnpm ingest                     # parse -> chunk -> embed -> Postgres (idempotent, sha256-keyed)
+pnpm ingest                     # parse (+OCR) -> chunk -> contextualise -> embed -> Postgres (idempotent, sha256-keyed)
 pnpm ask "Wie hoch ist der ermäßigte Umsatzsteuersatz?"          # add --as=user:x,group:y for restricted docs
-pnpm eval                       # recall@10 / MRR for dense, fts, hybrid
-pnpm test                       # unit + pipeline tests (EMBED_PROVIDER=fake, no API key needed)
+pnpm serve                      # http://localhost:3000 — demo page, POST /ask, POST /search, GET /health
+pnpm eval                       # recall@10 / MRR for dense, fts, hybrid  (--rerank=voyage --multi-query=2 to try the extras)
+pnpm test                       # unit + parser + pipeline tests (EMBED_PROVIDER=fake, no API key needed)
 pnpm golden:check               # lint the golden set against the parsed corpus
 pnpm where "Mindestlohnkommission"   # find where the corpus says something (source, page, section)
-pnpm experiment fusion          # grids: chunking | fusion | stopwords | efsearch | rerank -> docs/experiments/*.md
+pnpm experiment fusion          # grids: chunking | fusion | stopwords | efsearch | rerank | multiquery -> docs/experiments/*.md
 pnpm answers                    # generate an answer per golden question (Anthropic key) -> eval/answers/latest.jsonl
 pnpm judge --readme             # faithfulness judge + Cohen's kappa vs eval/labels.jsonl; writes the README table
 ```
 
-Any folder of `.pdf`, `.docx`, `.txt`, `.md` works: `pnpm ingest path/to/folder --tenant=acme --acl=group:kitchen`.
+Any folder of `.pdf` (text or scanned), `.docx`, `.xlsx`, `.csv`, `.html`, `.txt`, `.md`, `.png/.jpg/.tiff/.webp` works: `pnpm ingest path/to/folder --tenant=acme --acl=group:kitchen`.
 
 ## How it works
 
 ```
-corpus/*.pdf|docx|txt
-   │  parse (unpdf / mammoth)        per page
+corpus/*.pdf|docx|xlsx|csv|html|txt|png|jpg
+   │  parse (unpdf / mammoth / exceljs / own csv+html)   per page or sheet; pages without a text layer
+   │                                                      are rasterised at 200 dpi and OCR'd (tesseract.js, deu+eng)
    ▼
-chunkPages()                          section-aware: "§ 12 …", "Artikel 3", "2.1 …" start a chunk; ~1200 chars, 150 overlap
+chunkPages()                          section-aware: "§ 12 …", "Artikel 3", "2.1 …" start a chunk; ~1200 chars, 150 overlap;
+                                      tables arrive as 20-row blocks that each repeat the header row
    ▼
-embed()  ──► chunks(embedding vector(1536), tsv tsvector 'german', tenant_id, section, page)
+contextualize()                       "file › section" prefix (or one Haiku sentence per chunk, CONTEXTUALIZE=llm)
+   ▼
+embed()  ──► chunks(content, context, embedding vector(1024, voyage-4), tsv tsvector 'german' over context+content, tenant_id, section, page)
    │
-   ▼  query
-dense  : ORDER BY embedding <=> q            (HNSW, cosine)
+   ▼  query  (optionally the question + 2 model-written paraphrases, fused the same way)
+dense  : ORDER BY embedding <=> q            (HNSW cosine, iterative scan so tenant/ACL filters still return k)
 fts    : tsv @@ to_tsquery('german', t1|t2…) ranked by ts_rank_cd
 hybrid : reciprocal rank fusion of both, k=60
-rerank : optional cross-encoder over the top 50 (local Transformers.js model, Cohere, or a term-overlap baseline)
+rerank : optional cross-encoder over the top 50 (Voyage rerank-2.5, Cohere, local Transformers.js, or a term-overlap baseline)
    ▼
-ask    : Claude answers in German, cites [n], refuses when the excerpts do not cover the question
+ask    : Claude answers in German from the top 10 excerpts, cites [n], refuses when the excerpts do not cover the question
+serve  : the same two steps behind POST /ask, plus a one-page UI
 ```
 
 Tracing: with Langfuse keys in `.env`, every `pnpm ask` produces one trace (retrieve → embed, answer → model call) with latency and token usage; without keys tracing is a no-op.
@@ -95,12 +101,12 @@ Answer quality is judged, not assumed: `pnpm answers` generates an answer per go
 
 ## Status
 
-Week 1 of 8. Design intent and decisions live in [`CONTEXTS/`](CONTEXTS/00-overview.md); the build plan is in [`TASKS.md`](TASKS.md).
+Code for weeks 1–8 is in place; the numbers wait for API keys (see the Leon items in [`TASKS.md`](TASKS.md)). Design intent and decisions live in [`CONTEXTS/`](CONTEXTS/00-overview.md) and [`docs/adr/`](docs/adr/).
 
 ## Data
 
 - Corpus: public German federal law and Bundestag papers (gesetze-im-internet.de, dserver.bundestag.de), fetched by `pnpm fetch-corpus`, not redistributed here.
-- Test fixtures (`test/fixtures/`): synthetic documents written for the tests (a fictional municipal Satzung, a kitchen memo).
+- Test fixtures (`test/fixtures/`, `test/fixtures-formats/`): synthetic documents written for the tests (a fictional municipal Satzung, a kitchen memo, an invented price list, order sheet, menu page and a rendered "scan" of a hygiene protocol).
 - Tenants, ACL principals, user ids: fictional (`leak-a`, `group:kitchen`, `user:leon`).
 - Golden set and labels: written for this project; questions are the kind a small-business user would ask, not real user queries.
 

@@ -3,6 +3,7 @@ import { callerPrincipals, vec, withCaller, type Caller } from './db.js';
 import { embed } from './embed.js';
 import { span } from './telemetry.js';
 import { rerank, type RerankProvider } from './rerank.js';
+import { expandQuery } from './expand.js';
 
 export type Mode = 'dense' | 'fts' | 'hybrid';
 
@@ -36,7 +37,19 @@ export const tuning = {
   /** Cross-encoder reranking of the top `rerankTop` candidates; see src/rerank.ts. */
   rerank: 'none' as RerankProvider,
   rerankTop: 50,
+  /** RAG-fusion: number of model-written paraphrases searched alongside the question (0 = off). */
+  multiQuery: 0,
 };
+
+/**
+ * pgvector ≥ 0.8 can keep scanning the HNSW index until k rows pass the tenant/ACL filter; older
+ * versions stop after ef_search candidates and return fewer rows for small tenants. Checked once.
+ */
+let iterativeScan: Promise<boolean> | undefined;
+const hasIterativeScan = (c: pg.PoolClient) =>
+  (iterativeScan ??= c
+    .query<{ v: string }>("SELECT extversion AS v FROM pg_extension WHERE extname = 'vector'")
+    .then((r) => (r.rows[0]?.v ?? '0').localeCompare('0.8', undefined, { numeric: true }) >= 0));
 
 export async function denseSearch(
   c: pg.PoolClient,
@@ -44,9 +57,10 @@ export async function denseSearch(
   k: number,
   caller: Caller,
 ): Promise<Hit[]> {
-  const [e] = await embed([q]);
+  const [e] = await embed([q], 'query');
   // SET LOCAL lives in the caller transaction; the value is an integer we own, not user input.
   if (tuning.efSearch) await c.query(`SET LOCAL hnsw.ef_search = ${Math.trunc(tuning.efSearch)}`);
+  if (await hasIterativeScan(c)) await c.query('SET LOCAL hnsw.iterative_scan = relaxed_order');
   const res = await c.query<Hit>(
     `SELECT ${COLS}, 1 - (c.embedding <=> $1::vector) AS score
        FROM chunks c JOIN documents d ON d.id = c.document_id
@@ -131,12 +145,15 @@ export function search(
   return span('retrieve', { mode, k, tenant, query: q, rerank: tuning.rerank }, () =>
     withCaller(caller, async (c) => {
       const n = tuning.rerank === 'none' ? k : Math.max(k, tuning.rerankTop);
-      const hits =
+      const one = (query: string) =>
         mode === 'dense'
-          ? await denseSearch(c, q, n, caller)
+          ? denseSearch(c, query, n, caller)
           : mode === 'fts'
-            ? await ftsSearch(c, q, n, caller)
-            : await hybridSearch(c, q, n, caller);
+            ? ftsSearch(c, query, n, caller)
+            : hybridSearch(c, query, n, caller);
+      const queries = tuning.multiQuery ? await expandQuery(q, tuning.multiQuery) : [q];
+      const lists = await Promise.all(queries.map(one));
+      const hits = (lists.length > 1 ? fuse(lists) : lists[0]!).slice(0, n);
       return (await rerank(q, hits, tuning.rerank)).slice(0, k);
     }),
   );

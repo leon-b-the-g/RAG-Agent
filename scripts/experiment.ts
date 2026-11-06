@@ -13,7 +13,8 @@ import { tuning, type Mode } from '../src/search.js';
  *   pnpm experiment fusion    [--tenant=public]            rrfK × candidate depth, hybrid only
  *   pnpm experiment efsearch  [--tenant=public]            hnsw.ef_search, dense + hybrid
  *   pnpm experiment stopwords [--tenant=public]            German question-word filter off/on, fts + hybrid
- *   pnpm experiment rerank    [--tenant=public]            none / overlap / local cross-encoder / Cohere over the top 50, hybrid
+ *   pnpm experiment rerank    [--tenant=public]            none / overlap / local cross-encoder / Voyage / Cohere over the top 50, hybrid
+ *   pnpm experiment multiquery [--tenant=public]           RAG-fusion paraphrases 0/2/4, hybrid (Anthropic key)
  * Common: --golden=golden/golden.jsonl --k=10
  */
 const args = process.argv.slice(2);
@@ -62,10 +63,17 @@ switch (name) {
       await run(`ef_search=${efSearch || 'default'}`, ['dense', 'hybrid']);
     }
     break;
+  case 'multiquery':
+    for (const multiQuery of [0, 2, 4]) {
+      Object.assign(tuning, defaults, { multiQuery });
+      await run(`multiQuery=${multiQuery}`, ['hybrid']);
+    }
+    break;
   case 'rerank':
-    for (const rerank of ['none', 'overlap', 'local', 'cohere'] as const) {
-      if (rerank === 'cohere' && !process.env.COHERE_API_KEY) {
-        console.log('cohere: skipped (no COHERE_API_KEY)');
+    for (const rerank of ['none', 'overlap', 'local', 'voyage', 'cohere'] as const) {
+      const key = { voyage: 'VOYAGE_API_KEY', cohere: 'COHERE_API_KEY' }[rerank as string];
+      if (key && !process.env[key]) {
+        console.log(`${rerank}: skipped (no ${key})`);
         continue;
       }
       Object.assign(tuning, defaults, { rerank });
